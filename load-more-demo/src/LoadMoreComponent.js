@@ -136,6 +136,7 @@ const App = () => {
   const [files, setFiles] = useState([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   useEffect(() => {
     loadFiles();
@@ -156,13 +157,35 @@ const App = () => {
     setPage(prevPage => prevPage + 1);
   };
 
+  const handleFileSelection = (file) => {
+    setSelectedFiles((prevSelectedFiles) => {
+      if (prevSelectedFiles.includes(file)) {
+        return prevSelectedFiles.filter((selectedFile) => selectedFile !== file);
+      } else {
+        return [...prevSelectedFiles, file];
+      }
+    });
+  };
+
   return (
     <div className="App" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       {files.map((file, index) => (
-        <GeoTIFFViewer key={index} filename={file} />
+        <div key={index}>
+          <label>
+            <input
+              type="checkbox"
+              checked={selectedFiles.includes(file)}
+              onChange={() => handleFileSelection(file)}
+            />
+            {file}
+          </label>
+        </div>
       ))}
       {loading && <p>Loading...</p>}
       {!loading && <button onClick={loadMore}>Load More</button>}
+      {selectedFiles.map((file, index) => (
+        <GeoTIFFViewer key={index} filename={file} />
+      ))}
     </div>
   );
 };
