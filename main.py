@@ -18,15 +18,12 @@ app.add_middleware(
 # 文件夹路径
 FOLDER_PATH = "cliped_folder"  # 设置为你的基础目录路径
 
+
 @app.get("/files", response_model=List[str])
-def list_files(skip: int = Query(0), limit: int = Query(1)):
+async def list_files():
     try:
-        files = os.listdir(FOLDER_PATH)
-        files = sorted(files)  # 按名称排序
-        selected_files = files[skip: skip + limit]
-        return selected_files
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Folder not found")
+        files = [f for f in os.listdir(FOLDER_PATH) if f.endswith(('.tif', '.tiff'))]
+        return files
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

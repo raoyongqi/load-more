@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import axios from 'axios';
 import * as d3 from 'd3';
 import { fromArrayBuffer } from 'geotiff';
+import './GeoTIFFViewer.css';  // Import CSS for styling
 
 const GeoTIFFViewer = ({ filename }) => {
   const svgRef = useRef(null);
@@ -67,8 +68,8 @@ const GeoTIFFViewer = ({ filename }) => {
 
     const usedColors = contours.map(c => colorScale(c.value));
     const uniqueColors = [...new Set(usedColors)];
-    const legendWidth = 300;
-    const legendHeight = 20;
+    const legendWidth = 200;
+    const legendHeight = 10;
 
     const defs = d3.select(svgRef.current).append("defs");
     const linearGradient = defs.append("linearGradient")
@@ -84,7 +85,7 @@ const GeoTIFFViewer = ({ filename }) => {
 
     const legend = d3.select(svgRef.current).append("g")
       .attr("class", "legend")
-      .attr("transform", `translate(50, ${height + 100})`);
+      .attr("transform", `translate(20, ${height + 30})`);
 
     legend.append("rect")
       .attr("width", legendWidth)
@@ -96,7 +97,7 @@ const GeoTIFFViewer = ({ filename }) => {
       .range([0, legendWidth]);
 
     const legendAxis = d3.axisBottom(legendScale)
-      .ticks(5);
+      .ticks(4);
 
     legend.append("g")
       .attr("transform", `translate(0, ${legendHeight})`)
@@ -122,72 +123,17 @@ const GeoTIFFViewer = ({ filename }) => {
       .attr("stroke-opacity", 0.7);
   };
 
+  // Remove '.tif' extension from filename
+  const fileTitle = filename.replace('.tif', '');
+
   return (
-    <div>
-      <h2>GeoTIFF Viewer with d3</h2>
-      <svg ref={svgRef} width="500" height="500">
+    <div className="geo-tiff-viewer">
+      <h2>{fileTitle}</h2>
+      <svg ref={svgRef} width="400" height="400">
         <g></g>
       </svg>
     </div>
   );
 };
 
-const App = () => {
-  const [files, setFiles] = useState([]);
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-
-  useEffect(() => {
-    loadFiles();
-  }, [page]);
-
-  const loadFiles = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`http://localhost:8000/files?skip=${page}&limit=1`);
-      setFiles(prevFiles => [...prevFiles, ...response.data]);
-    } catch (error) {
-      console.error("Error loading files:", error);
-    }
-    setLoading(false);
-  };
-
-  const loadMore = () => {
-    setPage(prevPage => prevPage + 1);
-  };
-
-  const handleFileSelection = (file) => {
-    setSelectedFiles((prevSelectedFiles) => {
-      if (prevSelectedFiles.includes(file)) {
-        return prevSelectedFiles.filter((selectedFile) => selectedFile !== file);
-      } else {
-        return [...prevSelectedFiles, file];
-      }
-    });
-  };
-
-  return (
-    <div className="App" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      {files.map((file, index) => (
-        <div key={index}>
-          <label>
-            <input
-              type="checkbox"
-              checked={selectedFiles.includes(file)}
-              onChange={() => handleFileSelection(file)}
-            />
-            {file}
-          </label>
-        </div>
-      ))}
-      {loading && <p>Loading...</p>}
-      {!loading && <button onClick={loadMore}>Load More</button>}
-      {selectedFiles.map((file, index) => (
-        <GeoTIFFViewer key={index} filename={file} />
-      ))}
-    </div>
-  );
-};
-
-export default App;
+export default GeoTIFFViewer;

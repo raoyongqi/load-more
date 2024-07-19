@@ -1,0 +1,23 @@
+.geo-tiff-viewer {
+    margin: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    float: left; /* Ensure images float */
+  }
+  
+  .geo-tiff-viewer h2 {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+    text-align: center;
+  }
+  
+  .geo-tiff-viewer svg {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
