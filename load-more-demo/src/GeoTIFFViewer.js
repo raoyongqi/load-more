@@ -6,6 +6,7 @@ import './GeoTIFFViewer.css';  // Import CSS for styling
 
 const GeoTIFFViewer = ({ filename }) => {
   const svgRef = useRef(null);
+  const legendRef = useRef(null); // Reference for the legend SVG
 
   useEffect(() => {
     if (filename) {
@@ -52,75 +53,72 @@ const GeoTIFFViewer = ({ filename }) => {
   const renderContours = (contours, width, height) => {
     d3.select(svgRef.current).selectAll("*").remove();
 
+    const svg = d3.select(svgRef.current);
+    const svgWidth = svg.attr('width');
+    const svgHeight = svg.attr('height');
+
     const colorScale = d3.scaleSequential()
       .domain(d3.extent(contours.map(c => c.value)))
       .interpolator(d3.interpolateMagma)
       .unknown("#fff");
 
-    d3.select(svgRef.current)
-      .selectAll("path")
+    svg.selectAll("path")
       .data(contours)
       .enter().append("path")
-      .attr("d", d3.geoPath())
+      .attr("d", d3.geoPath().projection(d3.geoIdentity().scale(Math.min(svgWidth / width, svgHeight / height))))
       .attr("fill", d => colorScale(d.value))
       .attr("stroke", "#000")
       .attr("stroke-width", 0.5);
 
-    const usedColors = contours.map(c => colorScale(c.value));
-    const uniqueColors = [...new Set(usedColors)];
-    const legendWidth = 200;
-    const legendHeight = 10;
+    // Create or update the legend only once
+    if (!legendRef.current) {
+      const legendWidth = 300;
+      const legendHeight = 20;
 
-    const defs = d3.select(svgRef.current).append("defs");
-    const linearGradient = defs.append("linearGradient")
-      .attr("id", "legend-gradient")
-      .attr("x1", "0%").attr("y1", "0%")
-      .attr("x2", "100%").attr("y2", "0%");
+      const legend = d3.select(svgRef.current.parentNode).append("svg")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight + 30) // Add some space below for the axis
+        .attr("class", "legend")
+        .style("margin-top", "10px");
 
-    linearGradient.selectAll("stop")
-      .data(uniqueColors)
-      .enter().append("stop")
-      .attr("offset", (d, i) => i / (uniqueColors.length - 1))
-      .attr("stop-color", d => d);
+      legendRef.current = legend.node(); // Set the legend reference
 
-    const legend = d3.select(svgRef.current).append("g")
-      .attr("class", "legend")
-      .attr("transform", `translate(20, ${height + 30})`);
+      const defs = legend.append("defs");
+      const linearGradient = defs.append("linearGradient")
+        .attr("id", "legend-gradient")
+        .attr("x1", "0%").attr("y1", "0%")
+        .attr("x2", "100%").attr("y2", "0%");
 
-    legend.append("rect")
-      .attr("width", legendWidth)
-      .attr("height", legendHeight)
-      .style("fill", "url(#legend-gradient)");
+      const uniqueColors = [...new Set(contours.map(c => colorScale(c.value)))];
+      linearGradient.selectAll("stop")
+        .data(uniqueColors)
+        .enter().append("stop")
+        .attr("offset", (d, i) => i / (uniqueColors.length - 1))
+        .attr("stop-color", d => d);
 
-    const legendScale = d3.scaleLinear()
-      .domain(d3.extent(contours.map(c => c.value)))
-      .range([0, legendWidth]);
+      legend.append("rect")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("fill", "url(#legend-gradient)");
 
-    const legendAxis = d3.axisBottom(legendScale)
-      .ticks(4);
+      const legendScale = d3.scaleLinear()
+        .domain(d3.extent(contours.map(c => c.value)))
+        .range([0, legendWidth]);
 
-    legend.append("g")
-      .attr("transform", `translate(0, ${legendHeight})`)
-      .call(legendAxis);
+      const legendAxis = d3.axisBottom(legendScale)
+        .ticks(4);
 
-    legend.append("text")
-      .attr("x", legendWidth / 2)
-      .attr("y", -6)
-      .attr("fill", "#000")
-      .attr("text-anchor", "middle")
-      .text("Color Legend");
+      legend.append("g")
+        .attr("transform", `translate(0, ${legendHeight})`)
+        .call(legendAxis);
 
-    const contoursGroup = d3.select(svgRef.current).append("g");
-
-    contoursGroup.selectAll("path")
-      .data(contours)
-      .enter().append("path")
-      .attr("d", d3.geoPath())
-      .attr("fill", "none")
-      .attr("stroke", "#000")
-      .attr("stroke-width", 0.5)
-      .attr("stroke-dasharray", "3,3")
-      .attr("stroke-opacity", 0.7);
+      legend.append("text")
+        .attr("x", legendWidth / 2)
+        .attr("y", -6)
+        .attr("fill", "#000")
+        .attr("text-anchor", "middle")
+        .text("Color Legend");
+    }
   };
 
   // Remove '.tif' extension from filename
@@ -129,7 +127,7 @@ const GeoTIFFViewer = ({ filename }) => {
   return (
     <div className="geo-tiff-viewer">
       <h2>{fileTitle}</h2>
-      <svg ref={svgRef} width="400" height="400">
+      <svg ref={svgRef} width="600" height="400">
         <g></g>
       </svg>
     </div>
